@@ -1,0 +1,68 @@
+plugins {
+    id 'fabric-loom' version '1.17-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { url = "https://maven.fabricmc.net/" }
+    mavenCentral()
+}
+
+dependencies {
+    // Minecraft 26.2 + Fabric
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // Using Mojang's official mappings — most reliable for a fresh MC release.
+    // Switch to Yarn when 26.2 mappings are published: "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+loom {
+    splitEnvironmentSourceSets()
+
+    mods {
+        "methanium" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = Integer.parseInt(project.java_version)
+    options.encoding = 'UTF-8'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(project.java_version))
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+// ── Produce a fat jar with all dependencies bundled ─────────────────────────
+tasks.register('methaniumJar', Jar) {
+    dependsOn 'remapJar'
+    archiveClassifier = 'methanium-release'
+}

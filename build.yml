@@ -1,0 +1,49 @@
+name: Build Methanium Mod
+
+# Runs automatically every time you push code to GitHub
+on:
+  push:
+  workflow_dispatch: # also lets you trigger it manually from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download your code onto the build machine
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Java 25 (required by Minecraft 26.2)
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      # Step 3: Install Gradle 9.5.1 (the build tool)
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.1'
+
+      # Step 4: Use Mojang's official mappings (most stable for a new release)
+      #   If you want Yarn mappings instead, change build.gradle line:
+      #     mappings loom.officialMojangMappings()
+      #   to:
+      #     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+
+      # Step 5: Actually build the mod (downloads MC + Fabric, compiles everything)
+      - name: Build mod
+        run: gradle build
+        env:
+          GRADLE_OPTS: "-Xmx3G -XX:+UseG1GC"
+
+      # Step 6: Make the .jar file downloadable
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: methanium-1.0.0-jar
+          path: build/libs/methanium-*.jar
+          if-no-files-found: error
+          retention-days: 30
